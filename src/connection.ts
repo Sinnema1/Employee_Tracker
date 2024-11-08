@@ -4,7 +4,6 @@ dotenv.config();
 import pg from 'pg';
 const { Pool } = pg;
 
-// Initialize the connection pool
 const pool = new Pool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -15,7 +14,6 @@ const pool = new Pool({
 
 const connectToDb = async () => {
   try {
-    // Test the connection with a simple query
     await pool.query('SELECT 1');
     console.log('Connected to the database.');
   } catch (err) {

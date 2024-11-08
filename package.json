@@ -6,14 +6,11 @@
   "main": "server.js",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "node dist/server.js",
     "cli": "node dist/cli.js",
-    "start": "concurrently \"npm run server\" \"npm run cli\""
+    "start": "npm run cli"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "express": "^4.17.1",
     "inquirer": "^8.2.4",
     "node-fetch": "^3.3.2",
     "pg": "^8.11.3"
