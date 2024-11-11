@@ -1,5 +1,5 @@
-import inquirer from 'inquirer';
-import { pool, connectToDb } from './connection.js';
+import inquirer from "inquirer";
+import { pool, connectToDb } from "./connection.js";
 
 // Initialize database connection
 await connectToDb();
@@ -9,62 +9,75 @@ async function mainMenu() {
 
   while (isRunning) {
     const { action } = await inquirer.prompt({
-      type: 'list',
-      name: 'action',
-      message: 'What would you like to do?',
+      type: "list",
+      name: "action",
+      message: "What would you like to do?",
       choices: [
-        'View all employees',
-        'Add an employee',
-        'Update an employee role',
-        'Delete an employee',
-        'Exit',
+        "View all departments",
+        "View all roles",
+        "View all employees",
+        "View employees by manager", //bonus
+        "View employees by department", //bonus
+        "Add a department",
+        "Add a role",
+        "Add an employee",
+        "Update an employee role",
+        'Update employee manager', //bonus
+        'Delete a department', //bonus
+        'Delete a role', //bonus
+        "Delete an employee", //bonus
+        "View utilized budget", //bonus
+        "Exit",
       ],
     });
 
     switch (action) {
-      case 'View all departments':
+      case "View all departments":
         await viewDepartments();
         break;
-      case 'View all roles':
+      case "View all roles":
         await viewRoles();
         break;
-      case 'View all employees':
+      case "View all employees":
         await viewEmployees();
         break;
-      // case 'View employees by manager':
-      //   await viewEmployeesByMgr();
-      //   break;
-      // case 'View employees by department':
-      //   await viewEmployeesByDept();
-      //   break;
-      case 'Add a department':
+      case "View employees by manager": //bonus
+        await viewEmployeesByMgr();
+        break;
+      case 'View employees by department': //bonus
+        await viewEmployeesByDept();
+        break;
+      case "Add a department":
         await addDepartment();
         break;
-      case 'Add a role':
+      case "Add a role":
         await addRole();
         break;
-      case 'Add an employee':
+      case "Add an employee":
         await addEmployee();
         break;
-      case 'Update an employee role':
+      case "Update an employee role":
         await updateEmployeeRole();
         break;
-      // case 'Update employee manager':
-      //   await updateEmployeeManager();
-      //   break;
-      // case 'Delete a department':
-      //   await deleteDepartment();
-      //   break;
-      // case 'Delete a role':
-      //   await deleteRole();
-      //   break;
-      case 'Delete an employee':
+      case 'Update employee manager': //bonus
+        await updateEmployeeManager();
+        break;
+      case 'Delete a department': //bonus
+        await deleteDepartment();
+        break;
+      case 'Delete a role': //bonus
+        await deleteRole();
+        break;
+      case "Delete an employee": //bonus
         await deleteEmployee();
         break;
-      case 'Exit':
-        console.log('Goodbye!');
+      case "View utilized budget": //bonus
+      await viewBudget();
+      break;
+      case "Exit":
+        console.log("Goodbye!");
         await pool.end(); // Close the database connection
-        isRunning = false; // Exit the loop
+        isRunning = false; // Variable change to exit the loop
         break;
     }
   }
@@ -79,7 +92,7 @@ async function viewDepartments() {
     `);
     console.table(result.rows);
   } catch (err) {
-    console.error('Error retrieving departments:', err);
+    console.error("Error retrieving departments:", err);
   }
 }
 
@@ -93,7 +106,7 @@ async function viewRoles() {
     `);
     console.table(result.rows);
   } catch (err) {
-    console.error('Error retrieving roles:', err);
+    console.error("Error retrieving roles:", err);
   }
 }
 
@@ -106,10 +119,9 @@ async function viewEmployees() {
         e.first_name AS first_name, 
         e.last_name AS last_name, 
         r.title AS job_title, 
-        d.name AS department, 
+        d.name AS department_name, 
         r.salary AS salary, 
-        m.first_name AS manager_first_name, 
-        m.last_name AS manager_last_name
+        m.first_name || ' ' || m.last_name AS manager
       FROM employee e
       JOIN role r ON e.role_id = r.id
       JOIN department d ON r.department_id = d.id
@@ -118,19 +130,58 @@ async function viewEmployees() {
     `);
     console.table(result.rows);
   } catch (err) {
-    console.error('Error retrieving employees:', err);
+    console.error("Error retrieving employees:", err);
+  }
+}
+
+// View employees by manager //bonus
+async function viewEmployeesByMgr() {
+  try {
+    const result = await pool.query(`
+      SELECT
+        m.id AS manager_id,
+        m.first_name || ' ' || m.last_name AS manager,
+        e.id AS employee_id,
+        e.first_name || ' ' || e.last_name AS employee
+      FROM employee e
+      LEFT JOIN employee m ON e.manager_id = m.id
+      ORDER BY m.id, e.id;
+    `);
+    console.table(result.rows);
+  } catch (err) {
+    console.error("Error retrieving employees:", err);
+  }
+}
+
+// View employees by department //bonus
+async function viewEmployeesByDept() {
+  try {
+    const result = await pool.query(`
+      SELECT
+        d.id AS department_id,
+        d.name AS department_name, 
+        e.id AS employee_id,
+        e.first_name || ' ' || e.last_name AS employee
+      FROM employee e
+      JOIN role r ON e.role_id = r.id
+      JOIN department d ON r.department_id = d.id
+      ORDER BY d.id, e.id;
+    `);
+    console.table(result.rows);
+  } catch (err) {
+    console.error("Error retrieving employees:", err);
   }
 }
 
 // Add a new department
 async function addDepartment() {
   const { dptName } = await inquirer.prompt([
-    { 
-      type: 'input', 
-      name: 'dptName', 
-      message: "Department name:", 
-      validate: (input) => input ? true : 'First name cannot be empty.' 
-    }
+    {
+      type: "input",
+      name: "dptName",
+      message: "Department name:",
+      validate: (input) => (input ? true : "First name cannot be empty."),
+    },
   ]);
 
   try {
@@ -139,35 +190,38 @@ async function addDepartment() {
        VALUES ($1) RETURNING *`,
       [dptName || null]
     );
-    console.log('Department added successfully:', result.rows[0]);
+    console.log(`${dptName} department added successfully:`, result.rows[0]);
   } catch (err) {
-    console.error('Error adding department:', err);
+    console.error("Error adding department:", err);
   }
 }
 
 // Add a new role
 async function addRole() {
   try {
-    const departmentsResult = await pool.query('SELECT id, name FROM department ORDER BY id');
+    const departmentsResult = await pool.query(
+      "SELECT id, name FROM department ORDER BY id"
+    );
     const departments = departmentsResult.rows;
 
     const { roleName, salary, departmentId } = await inquirer.prompt([
       {
-        type: 'input',
-        name: 'roleName',
-        message: 'Role name:',
-        validate: (input) => input ? true : 'Role name cannot be empty.',
+        type: "input",
+        name: "roleName",
+        message: "Role name:",
+        validate: (input) => (input ? true : "Role name cannot be empty."),
       },
       {
-        type: 'input',
-        name: 'salary',
-        message: 'Salary for role:',
-        validate: (input) => !isNaN(Number(input)) && input ? true : 'Salary must be a number.',
+        type: "input",
+        name: "salary",
+        message: "Salary for role:",
+        validate: (input) =>
+          !isNaN(Number(input)) && input ? true : "Salary must be a number.",
       },
       {
-        type: 'list',
-        name: 'departmentId',
-        message: 'Select the department for this role:',
+        type: "list",
+        name: "departmentId",
+        message: "Select the department for this role:",
         choices: departments.map((dept) => ({
           name: dept.name,
           value: dept.id,
@@ -181,40 +235,41 @@ async function addRole() {
       [roleName, salary, departmentId]
     );
 
-    console.log('Role added successfully:', result.rows[0]);
+    console.log(`${roleName} added successfully:`, result.rows[0]);
   } catch (err) {
-    console.error('Error adding role:', err);
+    console.error("Error adding role:", err);
   }
 }
 
-// Add a new employee
+// Add a new employee //
 async function addEmployee() {
   try {
-    // Fetch all employees for the manager list
-    const mgrResults = await pool.query('SELECT id, first_name, last_name FROM employee ORDER BY first_name');
+    const mgrResults = await pool.query(
+      "SELECT id, first_name, last_name FROM employee ORDER BY first_name"
+    );
     const managers = mgrResults.rows;
 
-    // Fetch all roles for the role list
-    const rolesResult = await pool.query('SELECT id, title FROM role ORDER BY id');
+    const rolesResult = await pool.query(
+      "SELECT id, title FROM role ORDER BY id"
+    );
     const roles = rolesResult.rows;
 
-    // Prompt the user for employee details
     const { firstName, lastName, roleId, managerId } = await inquirer.prompt([
       {
-        type: 'input',
-        name: 'firstName',
+        type: "input",
+        name: "firstName",
         message: "Employee's first name:",
-        validate: (input) => input ? true : 'First name cannot be empty.',
+        validate: (input) => (input ? true : "First name cannot be empty."),
       },
       {
-        type: 'input',
-        name: 'lastName',
+        type: "input",
+        name: "lastName",
         message: "Employee's last name:",
-        validate: (input) => input ? true : 'Last name cannot be empty.',
+        validate: (input) => (input ? true : "Last name cannot be empty."),
       },
       {
-        type: 'list',
-        name: 'roleId',
+        type: "list",
+        name: "roleId",
         message: "Select employee's role:",
         choices: roles.map((role) => ({
           name: role.title,
@@ -222,11 +277,11 @@ async function addEmployee() {
         })),
       },
       {
-        type: 'list',
-        name: 'managerId',
+        type: "list",
+        name: "managerId",
         message: "Select employee's manager (or choose 'None'):",
         choices: [
-          { name: 'None', value: null },
+          { name: "None", value: null },
           ...managers.map((mgr) => ({
             name: `${mgr.first_name} ${mgr.last_name}`,
             value: mgr.id,
@@ -235,33 +290,34 @@ async function addEmployee() {
       },
     ]);
 
-    // Insert the new employee into the database
     const result = await pool.query(
       `INSERT INTO employee (first_name, last_name, role_id, manager_id)
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [firstName, lastName, roleId, managerId]
     );
 
-    console.log('Employee added successfully:', result.rows[0]);
+    console.log(`${firstName} ${lastName} added successfully:`, result.rows[0]);
   } catch (err) {
-    console.error('Error adding employee:', err);
+    console.error("Error adding employee:", err);
   }
 }
-  
+
 // Update an employee's role
 async function updateEmployeeRole() {
   const { employeeId, newRoleId } = await inquirer.prompt([
-    { 
-      type: 'input', 
-      name: 'employeeId', 
-      message: "Employee's ID to update:", 
-      validate: (input) => !isNaN(Number(input)) && input ? true : 'Employee ID must be a number.' 
+    {
+      type: "input",
+      name: "employeeId",
+      message: "Employee's ID to update:",
+      validate: (input) =>
+        !isNaN(Number(input)) && input ? true : "Employee ID must be a number.",
     },
-    { 
-      type: 'input', 
-      name: 'newRoleId', 
-      message: "New role ID for the employee:", 
-      validate: (input) => !isNaN(Number(input)) && input ? true : 'New role ID must be a number.' 
+    {
+      type: "input",
+      name: "newRoleId",
+      message: "New role ID for the employee:",
+      validate: (input) =>
+        !isNaN(Number(input)) && input ? true : "New role ID must be a number.",
     },
   ]);
 
@@ -271,22 +327,120 @@ async function updateEmployeeRole() {
       [newRoleId, employeeId]
     );
     if (result.rowCount === 0) {
-      console.log('Employee not found.');
+      console.log("Employee not found.");
     } else {
-      console.log('Employee role updated successfully:', result.rows[0]);
+      console.log("Employee role updated successfully:", result.rows[0]);
     }
   } catch (err) {
-    console.error('Error updating employee role:', err);
+    console.error("Error updating employee role:", err);
   }
 }
 
-// Delete an employee
+// Update an employee's manager //bonus
+async function updateEmployeeManager() {
+  try {
+    const mgrResults = await pool.query(`
+      SELECT id, first_name, last_name
+      FROM employee
+      ORDER BY first_name, last_name;
+    `);
+    const managers = mgrResults.rows;
+
+    const { employeeId, managerId } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'employeeId',
+        message: "Employee's ID to update:",
+        validate: (input) =>
+          !isNaN(Number(input)) && input ? true : 'Employee ID must be a number.',
+      },
+      {
+        type: 'list',
+        name: 'managerId',
+        message: "Select employee's new manager (or choose 'None'):",
+        choices: [
+          { name: 'None', value: null }, // Option for no manager
+          ...managers.map((mgr) => ({
+            name: `${mgr.first_name} ${mgr.last_name}`,
+            value: mgr.id,
+          })),
+        ],
+      },
+    ]);
+
+    const result = await pool.query(
+      `UPDATE employee SET manager_id = $1 WHERE id = $2 RETURNING *`,
+      [managerId, employeeId]
+    );
+
+    if (result.rowCount === 0) {
+      console.log('Employee not found.');
+    } else {
+      console.log('Employee manager updated successfully:', result.rows[0]);
+    }
+  } catch (err) {
+    console.error('Error updating employee manager:', err);
+  }
+}
+
+// Delete a department //bonus
+async function deleteDepartment() {
+  const { deptId } = await inquirer.prompt({
+    type: "input",
+    name: "deptId",
+    message: "Enter the ID of the department to delete:",
+    validate: (input) =>
+      !isNaN(Number(input)) && input ? true : "Department ID must be a number.",
+  });
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM department WHERE id = $1 RETURNING *`,
+      [deptId]
+    );
+    if (result.rowCount === 0) {
+      console.log("Department not found.");
+    } else {
+      console.log("Department deleted successfully:", result.rows[0]);
+    }
+  } catch (err) {
+    console.error("Error deleting department:", err);
+  }
+}
+
+// Delete a role //bonus
+async function deleteRole() {
+  const { roleId } = await inquirer.prompt({
+    type: "input",
+    name: "roleId",
+    message: "Enter the ID of the role to delete:",
+    validate: (input) =>
+      !isNaN(Number(input)) && input ? true : "Role ID must be a number.",
+  });
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM role WHERE id = $1 RETURNING *`,
+      [roleId]
+    );
+    if (result.rowCount === 0) {
+      console.log("Role not found.");
+    } else {
+      console.log("Role deleted successfully:", result.rows[0]);
+    }
+  } catch (err) {
+    console.error("Error deleting role:", err);
+  }
+}
+
+// Delete an employee //bonus
 async function deleteEmployee() {
   const { employeeId } = await inquirer.prompt({
-    type: 'input',
-    name: 'employeeId',
-    message: 'Enter the ID of the employee to delete:',
-    validate: (input) => !isNaN(Number(input)) && input ? true : 'Employee ID must be a number.',
+    type: "input",
+    name: "employeeId",
+    message: "Enter the ID of the employee to delete:",
+    validate: (input) =>
+      !isNaN(Number(input)) && input ? true : "Employee ID must be a number.",
   });
 
   try {
@@ -295,12 +449,31 @@ async function deleteEmployee() {
       [employeeId]
     );
     if (result.rowCount === 0) {
-      console.log('Employee not found.');
+      console.log("Employee not found.");
     } else {
-      console.log('Employee deleted successfully:', result.rows[0]);
+      console.log("Employee deleted successfully:", result.rows[0]);
     }
   } catch (err) {
-    console.error('Error deleting employee:', err);
+    console.error("Error deleting employee:", err);
+  }
+}
+
+// View total utilized budget //bonus
+async function viewBudget() {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        d.name AS department_name, 
+        SUM(r.salary) AS dept_budget,
+        COUNT(e.id) AS total_employees
+      FROM role r
+      JOIN employee e ON r.id = e.role_id
+      JOIN department d ON r.department_id = d.id
+      GROUP BY d.name
+    `);
+    console.table(result.rows);
+  } catch (err) {
+    console.error("Error retrieving budget:", err);
   }
 }
 

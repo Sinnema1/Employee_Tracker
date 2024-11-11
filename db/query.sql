@@ -7,7 +7,7 @@ FROM role
 JOIN department ON role.department_id = department.id;
 
 -- Get all employees with their roles and manager
-SELECT e.id AS employee_id, e.first_name, e.last_name, 
+SELECT e.id AS employee_id, m.id AS manager_id, e.first_name, e.last_name, 
        role.title AS role_title, role.salary, 
        d.name AS department_name,
        m.first_name AS manager_first_name, m.last_name AS manager_last_name
