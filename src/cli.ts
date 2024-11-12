@@ -16,17 +16,17 @@ async function mainMenu() {
         "View all departments",
         "View all roles",
         "View all employees",
-        "View employees by manager", //bonus
-        "View employees by department", //bonus
+        "View employees by manager", 
+        "View employees by department", 
         "Add a department",
         "Add a role",
         "Add an employee",
         "Update an employee role",
-        'Update employee manager', //bonus
-        'Delete a department', //bonus
-        'Delete a role', //bonus
-        "Delete an employee", //bonus
-        "View utilized budget", //bonus
+        'Update employee manager', 
+        'Delete a department', 
+        'Delete a role', 
+        "Delete an employee", 
+        "View utilized budget", 
         "Exit",
       ],
     });
@@ -41,10 +41,10 @@ async function mainMenu() {
       case "View all employees":
         await viewEmployees();
         break;
-      case "View employees by manager": //bonus
+      case "View employees by manager": 
         await viewEmployeesByMgr();
         break;
-      case 'View employees by department': //bonus
+      case 'View employees by department': 
         await viewEmployeesByDept();
         break;
       case "Add a department":
@@ -59,19 +59,19 @@ async function mainMenu() {
       case "Update an employee role":
         await updateEmployeeRole();
         break;
-      case 'Update employee manager': //bonus
+      case 'Update employee manager': 
         await updateEmployeeManager();
         break;
-      case 'Delete a department': //bonus
+      case 'Delete a department': 
         await deleteDepartment();
         break;
-      case 'Delete a role': //bonus
+      case 'Delete a role': 
         await deleteRole();
         break;
-      case 'Delete an employee': //bonus
+      case 'Delete an employee': 
         await deleteEmployee();
         break;
-      case "View utilized budget": //bonus
+      case "View utilized budget": 
       await viewBudget();
       break;
       case "Exit":
@@ -134,7 +134,7 @@ async function viewEmployees() {
   }
 }
 
-// View employees by manager //bonus
+// View employees by manager
 async function viewEmployeesByMgr() {
   try {
     const result = await pool.query(`
@@ -153,7 +153,7 @@ async function viewEmployeesByMgr() {
   }
 }
 
-// View employees by department //bonus
+// View employees by department
 async function viewEmployeesByDept() {
   try {
     const result = await pool.query(`
@@ -241,7 +241,7 @@ async function addRole() {
   }
 }
 
-// Add a new employee //
+// Add a new employee
 async function addEmployee() {
   try {
     const mgrResults = await pool.query(
@@ -351,7 +351,7 @@ async function updateEmployeeRole() {
   }
 }
 
-// Update an employee's manager //bonus
+// Update an employee's manager
 async function updateEmployeeManager() {
   try {
     const empResults = await pool.query(`
@@ -407,7 +407,7 @@ async function updateEmployeeManager() {
   }
 }
 
-// Delete a department, role, employee //bonus
+// Delete a department
 async function deleteDepartment() {
   try {
     const departmentsResult = await pool.query(
@@ -439,7 +439,7 @@ async function deleteDepartment() {
   }
 }
 
-// Delete a role //bonus
+// Delete a role
 async function deleteRole() {
   try{
     const roleResults = await pool.query(`
@@ -471,7 +471,7 @@ async function deleteRole() {
   }
 }
 
-// Delete an employee //bonus
+// Delete an employee
 async function deleteEmployee() {
   try{
     const empResults = await pool.query(`
@@ -503,7 +503,7 @@ async function deleteEmployee() {
   }
 }
 
-// View total utilized budget //bonus
+// View total utilized budget
 async function viewBudget() {
   try {
     const result = await pool.query(`
