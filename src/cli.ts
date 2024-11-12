@@ -68,7 +68,7 @@ async function mainMenu() {
       case 'Delete a role': //bonus
         await deleteRole();
         break;
-      case "Delete an employee": //bonus
+      case 'Delete an employee': //bonus
         await deleteEmployee();
         break;
       case "View utilized budget": //bonus
@@ -304,41 +304,63 @@ async function addEmployee() {
 
 // Update an employee's role
 async function updateEmployeeRole() {
-  const { employeeId, newRoleId } = await inquirer.prompt([
-    {
-      type: "input",
-      name: "employeeId",
-      message: "Employee's ID to update:",
-      validate: (input) =>
-        !isNaN(Number(input)) && input ? true : "Employee ID must be a number.",
-    },
-    {
-      type: "input",
-      name: "newRoleId",
-      message: "New role ID for the employee:",
-      validate: (input) =>
-        !isNaN(Number(input)) && input ? true : "New role ID must be a number.",
-    },
-  ]);
-
   try {
+    const empResults = await pool.query(`
+      SELECT id, first_name, last_name
+      FROM employee
+      ORDER BY first_name;
+    `);
+    const employees = empResults.rows;
+
+    const roleResults = await pool.query(`
+      SELECT id, title
+      FROM role
+      ORDER BY title;
+    `);
+    const roles = roleResults.rows;
+
+    const { employeeName, updatedRoleName } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'employeeName',
+        message: "Which employee's role do you want to update?",
+        choices: employees.map((emp) => ({
+          name: `${emp.first_name} ${emp.last_name}`,
+          value: emp.id,
+        })),
+      },
+      {
+        type: 'list',
+        name: 'updatedRoleName',
+        message: 'Which role do you want to assign to the selected employee?',
+        choices: roles.map((role) => ({
+          name: role.title,
+          value: role.id,
+        })),
+      },
+    ]);
+
     const result = await pool.query(
       `UPDATE employee SET role_id = $1 WHERE id = $2 RETURNING *`,
-      [newRoleId, employeeId]
+      [updatedRoleName, employeeName]
     );
-    if (result.rowCount === 0) {
-      console.log("Employee not found.");
-    } else {
-      console.log("Employee role updated successfully:", result.rows[0]);
-    }
+
+      console.log('Employee role updated successfully:', result.rows[0]);
   } catch (err) {
-    console.error("Error updating employee role:", err);
+    console.error('Error updating employee role:', err);
   }
 }
 
 // Update an employee's manager //bonus
 async function updateEmployeeManager() {
   try {
+    const empResults = await pool.query(`
+      SELECT id, first_name, last_name
+      FROM employee
+      ORDER BY first_name;
+    `);
+    const employees = empResults.rows;
+
     const mgrResults = await pool.query(`
       SELECT id, first_name, last_name
       FROM employee
@@ -346,20 +368,22 @@ async function updateEmployeeManager() {
     `);
     const managers = mgrResults.rows;
 
-    const { employeeId, managerId } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'employeeId',
-        message: "Employee's ID to update:",
-        validate: (input) =>
-          !isNaN(Number(input)) && input ? true : 'Employee ID must be a number.',
-      },
+    const { employeeName, managerName } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'employeeName',
+          message: "Which employee's manager do you want to update?",
+          choices: employees.map((emp) => ({
+            name: `${emp.first_name} ${emp.last_name}`,
+            value: emp.id,
+          })),
+        },
       {
         type: 'list',
-        name: 'managerId',
+        name: 'managerName',
         message: "Select employee's new manager (or choose 'None'):",
         choices: [
-          { name: 'None', value: null }, // Option for no manager
+          { name: 'None', value: null },
           ...managers.map((mgr) => ({
             name: `${mgr.first_name} ${mgr.last_name}`,
             value: mgr.id,
@@ -370,7 +394,7 @@ async function updateEmployeeManager() {
 
     const result = await pool.query(
       `UPDATE employee SET manager_id = $1 WHERE id = $2 RETURNING *`,
-      [managerId, employeeId]
+      [managerName, employeeName]
     );
 
     if (result.rowCount === 0) {
@@ -383,26 +407,33 @@ async function updateEmployeeManager() {
   }
 }
 
-// Delete a department //bonus
+// Delete a department, role, employee //bonus
 async function deleteDepartment() {
-  const { deptId } = await inquirer.prompt({
-    type: "input",
-    name: "deptId",
-    message: "Enter the ID of the department to delete:",
-    validate: (input) =>
-      !isNaN(Number(input)) && input ? true : "Department ID must be a number.",
-  });
-
   try {
+    const departmentsResult = await pool.query(
+      "SELECT id, name FROM department ORDER BY id"
+    );
+    const departments = departmentsResult.rows;
+
+
+
+    const { deptName } = await inquirer.prompt([
+    {
+      type: "list",
+      name: "deptName",
+      message: "Select the department to delete:",
+      choices: departments.map((dept) => ({
+        name: dept.name,
+        value: dept.id,
+      })),
+    }
+  ]);
     const result = await pool.query(
       `DELETE FROM department WHERE id = $1 RETURNING *`,
-      [deptId]
+      [deptName]
     );
-    if (result.rowCount === 0) {
-      console.log("Department not found.");
-    } else {
+
       console.log("Department deleted successfully:", result.rows[0]);
-    }
   } catch (err) {
     console.error("Error deleting department:", err);
   }
@@ -410,24 +441,31 @@ async function deleteDepartment() {
 
 // Delete a role //bonus
 async function deleteRole() {
-  const { roleId } = await inquirer.prompt({
-    type: "input",
-    name: "roleId",
-    message: "Enter the ID of the role to delete:",
-    validate: (input) =>
-      !isNaN(Number(input)) && input ? true : "Role ID must be a number.",
-  });
+  try{
+    const roleResults = await pool.query(`
+      SELECT id, title
+      FROM role
+      ORDER BY title;
+    `);
+    const roles = roleResults.rows;
 
-  try {
+    const { roleName } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'roleName',
+        message: 'Which role do you want to delete?',
+        choices: roles.map((role) => ({
+          name: role.title,
+          value: role.id,
+        })),
+      },
+    ]);
     const result = await pool.query(
       `DELETE FROM role WHERE id = $1 RETURNING *`,
-      [roleId]
+      [roleName]
     );
-    if (result.rowCount === 0) {
-      console.log("Role not found.");
-    } else {
+
       console.log("Role deleted successfully:", result.rows[0]);
-    }
   } catch (err) {
     console.error("Error deleting role:", err);
   }
@@ -435,24 +473,31 @@ async function deleteRole() {
 
 // Delete an employee //bonus
 async function deleteEmployee() {
-  const { employeeId } = await inquirer.prompt({
-    type: "input",
-    name: "employeeId",
-    message: "Enter the ID of the employee to delete:",
-    validate: (input) =>
-      !isNaN(Number(input)) && input ? true : "Employee ID must be a number.",
-  });
+  try{
+    const empResults = await pool.query(`
+      SELECT id, first_name, last_name
+      FROM employee
+      ORDER BY first_name;
+    `);
+    const employees = empResults.rows;
 
-  try {
+    const { employeeName } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'employeeName',
+        message: "Which employee do you want to delete?",
+        choices: employees.map((emp) => ({
+          name: `${emp.first_name} ${emp.last_name}`,
+          value: emp.id,
+        })),
+      }
+    ]);
     const result = await pool.query(
       `DELETE FROM employee WHERE id = $1 RETURNING *`,
-      [employeeId]
+      [employeeName]
     );
-    if (result.rowCount === 0) {
-      console.log("Employee not found.");
-    } else {
+
       console.log("Employee deleted successfully:", result.rows[0]);
-    }
   } catch (err) {
     console.error("Error deleting employee:", err);
   }
